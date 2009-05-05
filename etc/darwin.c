@@ -3,8 +3,6 @@
 #include <string.h>
 #include "get_my_path.h"
 
-static char rcsid[] = "$Id: linux.c 355 2007-02-18 22:08:49Z drh $";
-
 static char cppPath[PATH_MAX];
 static char rccPath[PATH_MAX];
 
