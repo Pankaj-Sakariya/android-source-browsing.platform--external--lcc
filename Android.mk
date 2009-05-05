@@ -74,9 +74,7 @@ LOCAL_MODULE_CLASS := EXECUTABLES
 intermediates:= $(local-intermediates-dir)/ir
 GEN := $(addprefix $(intermediates)/, \
             dagcheck.c \
-            alpha.c \
-            mips.c \
-            sparc.c \
+            arm.c \
             x86.c \
             x86linux.c \
         )
@@ -127,20 +125,19 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := lcc
 
 LOCAL_SRC_FILES := \
-	lcc.c
+	lcc.c \
+	android.c
 
 ifeq ($(HOST_OS),darwin)
   LOCAL_LDLIBS += -framework Carbon
 
   LOCAL_SRC_FILES += \
-	darwin.c \
 	get_my_path_darwin.c
 endif
 
 ifeq ($(HOST_OS),linux)
 
   LOCAL_SRC_FILES += \
-	linux.c \
 	get_my_path_linux.c
 endif
 

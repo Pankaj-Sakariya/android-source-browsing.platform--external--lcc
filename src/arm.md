@@ -4,45 +4,6 @@
 #define FLTTMP 0x0e
 #define FLTVAR 0xf0
 
-/* Platform specific assembler directives.  These macros allow  generation
-   of the majority of the code that differs between the ARM and GNU assembler
-   formats for ARM assembler.  The remainder of differences are dealt with
-   on a case-by-case basis within code generation.                           */
-
-
-#ifdef __riscos__
-
-#define ASM_ALIGN          "\tALIGN\t4\n"
-#define ASM_EXPORT         "\tEXPORT\t%s\n"
-#define ASM_ALABEL         "%a"
-#define ASM_SYMBOL_NUM     "|L..%d|"
-#define ASM_SYMBOL_NAME    "|L..%s|"
-#define ASM_CONST_WORD     "\tdcd\t"
-#define ASM_CONST_BYTE     "\tdcb\t"
-#define ASM_COMMENT        "\t; "
-#define ASM_SPACE          "\t%%\t"
-#define ASM_SDIVIDE        "\t|x$divide|"
-#define ASM_UDIVIDE        "\t|x$udivide|"
-#define ASM_SREMAINDER     "\t|x$remainder|"
-#define ASM_UREMAINDER     "\t|x$uremainder|"
-
-
-#else
-
-#define ASM_ALIGN          "\t.align\t4\n"
-#define ASM_EXPORT         "\t.global\t%s\n"
-#define ASM_ALABEL         "%a:"
-#define ASM_SYMBOL_NUM     ".L%d"
-#define ASM_SYMBOL_NAME    ".L%s"
-#define ASM_CONST_WORD     "\t.word\t"
-#define ASM_CONST_BYTE     "\t.byte\t"
-#define ASM_COMMENT        "\t@ "
-#define ASM_SPACE          "\t.space\t"
-#define ASM_SDIVIDE        "\t__divsi3"
-#define ASM_SREMAINDER     "\t__modsi3"
-
-#endif
-
 
 #define savelist        (0xd800) /* fp, ip, lr, pc */
 #define reslist         (0xa800) /* fp, sp, pc */
@@ -247,7 +208,7 @@ con: CNSTU4  "%a"
 con: CNSTP4  "%a"
 
 reg: con     "# arbitrary constant\n" 2
-reg: ADDRGP4 "\tldr\t%c, [pc, #0]\n\tmov\tpc, pc\n" ASM_CONST_WORD "%a\n"  2
+reg: ADDRGP4 "\tldr\t%c, [pc, #0]\n\tmov\tpc, pc\n\t.word\t%a\n"  2
 reg: ADDRFP4 "# arbitrary offset\n"   2
 reg: ADDRLP4 "# arbitrary offset\n"   2
 
@@ -361,15 +322,15 @@ reg: MULU4(reg,reg)  "# mul\n"               1
 reg: MULF4(reg,reg)  "\tfmls\t%c, %0, %1\n"  1
 reg: MULF8(reg,reg)  "\tmufd\t%c, %0, %1\n"  1
 
-reg: DIVI4(reg,reg)  "\tbl" ASM_SDIVIDE "\n"    2
+reg: DIVI4(reg,reg)  "\tbl\t__divsi3\n"    2
 reg: DIVU4(reg,reg)  "\tbl\t|x$udivide|\n"   2
 reg: DIVF4(reg,reg)  "\tfdvs\t%c, %0, %1\n"  1
 reg: DIVF8(reg,reg)  "\tdvfd\t%c, %0, %1\n"  1
 
-reg: MODI4(reg,reg)  "\tbl " ASM_SREMAINDER "\n"    1
+reg: MODI4(reg,reg)  "\tbl \t__modsi3\n"    1
 reg: MODU4(reg,reg)  "\tbl\t|x$uremainder|\n"   1
 
-stmt: LABELV    "" ASM_ALABEL "\n"
+stmt: LABELV    "%a:\n"
 
 stmt: JUMPV(bra)  "\tb\t%0\n"        1
 stmt: JUMPV(reg)  "\tmov\tpc, %0\n"  1
@@ -429,23 +390,18 @@ stmt: RETF4(reg)  "# ret\n"  1
 stmt: RETF8(reg)  "# ret\n"  1
 
 spill: ADDRLP4	"%a+%F"
-stmt: ASGNI1(spill,reg)  "\tldr\tip, [pc, #0]\n\tmov\tpc, pc\n" ASM_CONST_WORD "%0\n\tstrb\t%1, [sp, ip]\n"
-stmt: ASGNU1(spill,reg)  "\tldr\tip, [pc, #0]\n\tmov\tpc, pc\n" ASM_CONST_WORD "%0\n\tstrb\t%1, [sp, ip]\n"
-stmt: ASGNI2(spill,reg)  "\tldr\tip, [pc, #0]\n\tmov\tpc, pc\n" ASM_CONST_WORD "%0\n\tadd\tip, ip, sp\n\tstr\ta1, [sp, #-4]!\n\tstrb\t%1, [ip, #0]\n\tmov\ta1, %1, lsr#8\n\tstrb\ta1, [ip, #1]\n\tldr\ta1, [sp], #4\n"
-stmt: ASGNU2(spill,reg)  "\tldr\tip, [pc, #0]\n\tmov\tpc, pc\n" ASM_CONST_WORD "%0\n\tadd\tip, ip, sp\n\tstr\ta1, [sp, #-4]!\n\tstrb\t%1, [ip, #0]\n\tmov\ta1, %1, lsr#8\n\tstrb\ta1, [ip, #1]\n\tldr\ta1, [sp], #4\n"
-stmt: ASGNI4(spill,reg)  "\tldr\tip, [pc, #0]\n\tmov\tpc, pc\n" ASM_CONST_WORD "%0\n\tstr\t%1, [sp, ip]\n"
-stmt: ASGNP4(spill,reg)  "\tldr\tip, [pc, #0]\n\tmov\tpc, pc\n" ASM_CONST_WORD "%0\n\tstr\t%1, [sp, ip]\n"
-stmt: ASGNU4(spill,reg)  "\tldr\tip, [pc, #0]\n\tmov\tpc, pc\n" ASM_CONST_WORD "%0\n\tstr\t%1, [sp, ip]\n"
-stmt: ASGNF4(spill,reg)  "\tldr\tip, [pc, #0]\n\tmov\tpc, pc\n" ASM_CONST_WORD "%0\n\tadd\tip, ip, sp\n\tstfs\t%1, [ip, #0]\n"
-stmt: ASGNF8(spill,reg)  "\tldr\tip, [pc, #0]\n\tmov\tpc, pc\n" ASM_CONST_WORD "%0\n\tadd\tip, ip, sp\n\tstfd\t%1, [ip, #0]\n"
+stmt: ASGNI1(spill,reg)  "\tldr\tip, [pc, #0]\n\tmov\tpc, pc\n\t.word\t%0\n\tstrb\t%1, [sp, ip]\n"
+stmt: ASGNU1(spill,reg)  "\tldr\tip, [pc, #0]\n\tmov\tpc, pc\n\t.word\t%0\n\tstrb\t%1, [sp, ip]\n"
+stmt: ASGNI2(spill,reg)  "\tldr\tip, [pc, #0]\n\tmov\tpc, pc\n\t.word\t%0\n\tadd\tip, ip, sp\n\tstr\ta1, [sp, #-4]!\n\tstrb\t%1, [ip, #0]\n\tmov\ta1, %1, lsr#8\n\tstrb\ta1, [ip, #1]\n\tldr\ta1, [sp], #4\n"
+stmt: ASGNU2(spill,reg)  "\tldr\tip, [pc, #0]\n\tmov\tpc, pc\n\t.word\t%0\n\tadd\tip, ip, sp\n\tstr\ta1, [sp, #-4]!\n\tstrb\t%1, [ip, #0]\n\tmov\ta1, %1, lsr#8\n\tstrb\ta1, [ip, #1]\n\tldr\ta1, [sp], #4\n"
+stmt: ASGNI4(spill,reg)  "\tldr\tip, [pc, #0]\n\tmov\tpc, pc\n\t.word\t%0\n\tstr\t%1, [sp, ip]\n"
+stmt: ASGNP4(spill,reg)  "\tldr\tip, [pc, #0]\n\tmov\tpc, pc\n\t.word\t%0\n\tstr\t%1, [sp, ip]\n"
+stmt: ASGNU4(spill,reg)  "\tldr\tip, [pc, #0]\n\tmov\tpc, pc\n\t.word\t%0\n\tstr\t%1, [sp, ip]\n"
+stmt: ASGNF4(spill,reg)  "\tldr\tip, [pc, #0]\n\tmov\tpc, pc\n\t.word\t%0\n\tadd\tip, ip, sp\n\tstfs\t%1, [ip, #0]\n"
+stmt: ASGNF8(spill,reg)  "\tldr\tip, [pc, #0]\n\tmov\tpc, pc\n\t.word\t%0\n\tadd\tip, ip, sp\n\tstfd\t%1, [ip, #0]\n"
 %%
 static void progend() {
-#ifdef __riscos__
-	print(ASM_ALIGN);
-	print("\tEND\n");
-#else
 	print("\t.ident \"lcc ARM backend\"\n");
-#endif
 }
 static void progbeg(argc, argv) int argc; char *argv[]; {
 	int i;
@@ -771,18 +727,14 @@ static void function(Symbol f, Symbol caller[], Symbol callee[], int ncalls)
 		4);
 	segment(CODE);
 	if (glevel) {
-		print(ASM_ALIGN);
+		print("\t.align\t4\n");
 		defstring(strlen(f->x.name) + 1, f->x.name);
-		print(ASM_ALIGN);
+		print("\t.align\t4\n");
 		print("\tdcd\t&%x\n", 0xff000000 | ((strlen(f->x.name) + 4) &
 ~3));
 	}
-	print(ASM_ALIGN);
-#ifdef __riscos__
-	print("|%s|\n", f->x.name);
-#else
+	print("\t.align\t4\n");
 	print("%s:\n", f->x.name);
-#endif
 
         /* APCS Function header to save registers */
 	print("\tmov\tip, sp\n");
@@ -802,17 +754,6 @@ static void function(Symbol f, Symbol caller[], Symbol callee[], int ncalls)
 
 
        /* Output APCS stack overflow check */
-#ifdef __riscos__
-        if (framesize + 16 > 256) {
-                arm_add(12, 13, -(framesize + 16));
-                print("\tcmp\tip, sl\n");
-                print("\tbllt\t|x$stack_overflow_1|\n");
-        } else {
-                print("\tcmp\tsp, sl\n");
-                print("\tbllt\t|x$stack_overflow|\n");
-        }
-#endif
-
 	if (framesize - sizefsave - sizeisave > 0)
 		arm_add(13, 13, -(framesize - sizefsave - sizeisave));
 	for (i = 0; i < 4 && callee[i]; i++)
@@ -832,7 +773,7 @@ static void function(Symbol f, Symbol caller[], Symbol callee[], int ncalls)
 				(8 - i) * 12 - 4);
 
         /* Restore saved registers used by function */
-	print("\tldmea\tfp, {%s}^\n",
+	print("\tldmea\tfp, {%s}\n",
 		reglist((usedmask[IREG] & 0x3f0) | reslist));
 }
 
@@ -844,26 +785,26 @@ static void defconst(int suffix, int size, Value v) {
         /* float */
 	if (suffix == F && size == 4) {
  		float f = v.d;
- 		print(ASM_CONST_WORD "0x%x" ASM_COMMENT "float %f\n", *(unsigned *)&f, f); return;
+ 		print("\t.word\t0x%x" "\t@ float %f\n", *(unsigned *)&f, f); return;
 	}
 	/* double */
 	else if (suffix == F && size == 8) {
   		double d = v.d;
   		unsigned *p = (unsigned *)&d;
-  		print(ASM_CONST_WORD "0x%x, 0x%x" ASM_COMMENT "double %f\n", p[swap], p[!swap], d);
+  		print("\t.word\t0x%x, 0x%x\t@ double %f\n", p[swap], p[!swap], d);
 	}
         /* pointer */
 	else if (suffix == P)
-		print(ASM_CONST_WORD "0x%x\n", v.p);
+		print("\t.word\t0x%x\n", v.p);
         /* byte */
 	else if (size == 1)
-		print(ASM_CONST_BYTE "%d\n", suffix == I ? (signed char)v.i : (unsigned char)v.u);
+		print("\t.byte\t%d\n", suffix == I ? (signed char)v.i : (unsigned char)v.u);
         /* short */
 	else if (size == 2)
 		print("\tdcw\t%d\n", suffix == I ? (short)v.i : (unsigned short)v.u);
         /* int */        
 	else if (size == 4)
-		print(ASM_CONST_WORD "%d\n", suffix == I ? (int)v.i : (unsigned)v.u);
+		print("\t.word\t%d\n", suffix == I ? (int)v.i : (unsigned)v.u);
 }
 
 
@@ -871,7 +812,7 @@ static void defconst(int suffix, int size, Value v) {
  * Output address of a given symbol
  */
 static void defaddress(Symbol p) {
-	print(ASM_CONST_WORD "%s\n", p->x.name);
+	print("\t.word\t%s\n", p->x.name);
 }
 
 
@@ -882,57 +823,35 @@ static void defstring(int n, char *str) {
 	int mode, oldmode = 0;
 	char *s, c;
 
-#ifdef __riscos__
-	print("\t=\t");
-#else
 	print("\t.ascii \"");
-#endif
 	for (s = str; s < str + n; s++) {
 	    	c = (*s) & 0xff;
 	    	mode = (isprint(c) && c != '\"' && c != '\\') ? 1 : 0;
-#ifdef __riscos__
-                if (oldmode && !mode)
-                	print("\",");
-                else if (!oldmode && mode)
-                	print("\"");
-                print(mode ? "%c" : "&%x", c);
-                if (!mode && s < str + n - 1)
-                	print(",");
-#else
                 if (mode)
                         print("%c", c);
                 else
 	    	        print("\\%d%d%d", c >> 6, (c >> 3) & 3, c & 3);
-#endif
 	    	oldmode = mode;
 	}
-#ifdef __riscos__
-	if (mode)
-#endif
 		print("\"");
 	print("\n");
 }
 
 
 static void export(Symbol p) {
-	print(ASM_EXPORT, p->x.name);
+	print("\t.global\t%s\n", p->x.name);
 }
 
 
 static void import(Symbol p) {
-#if 0
-#ifdef __riscos__
-	print("\tIMPORT\t|%s|\n", p->x.name);
-#endif
-#endif
 }
 
 
 static void defsymbol(Symbol p) {
 	if (p->scope >= LOCAL && p->sclass == STATIC)
-		p->x.name = stringf(ASM_SYMBOL_NUM, genlabel(1));
+		p->x.name = stringf(".L%d", genlabel(1));
 	else if (p->generated)
-		p->x.name = stringf(ASM_SYMBOL_NAME, p->name);
+		p->x.name = stringf(".L%s", p->name);
 	else
 		assert(p->scope != CONSTANTS || isint(p->type) || isptr(p->type)),
 		p->x.name = p->name;
@@ -951,76 +870,43 @@ static void address(Symbol q, Symbol p, long n) {
 
 
 static void global(Symbol p) {
-#ifdef __riscos__
-	if (p->u.seg == BSS) {
-		if (p->sclass == STATIC || Aflag >= 2) {
-			if (cseg != BSS)
-				print("\tAREA\t|C$$zidata|, DATA, NOINIT\n");
-			if (p->type->align > 1)
-				print("\tALIGN\t%d\n", p->type->align);
-			print("%s\n\t%%\t%d\n", p->x.name, p->type->size);
-		} else {
-			print("\tAREA\t%s, COMMON, NOINIT\n", p->x.name);
-			if (p->type->align > 1)
-				print("\tALIGN\t%d\n", p->type->align);
-			print("\t%%\t%d\n", p->type->size);
-		}
-		print("\tAREA\t|C$$code|, CODE, READONLY\n");
-	} else {
-		if (p->u.seg == DATA)
-			print("\tAREA\t|C$$data|, DATA\n");
-		if (p->type->align > 1)
-			print("\tALIGN\t%d\n", p->type->align);
-		print("%s\n", p->x.name);
-	}
-#else
-        assert(p->u.seg);
-        if (!p->generated) {
-                print(".type %s,#%s\n", p->x.name,
-                          isfunc(p->type) ? "function" : "object");
-                if (p->type->size > 0)
-                        print(".size %s,%d\n", p->x.name, p->type->size);
+	assert(p->u.seg);
+	if (!p->generated) {
+			print(".type %s,#%s\n", p->x.name,
+					  isfunc(p->type) ? "function" : "object");
+			if (p->type->size > 0)
+					print(".size %s,%d\n", p->x.name, p->type->size);
 
-                /* else
-                         prevg = p; */
-        }
-        if (p->u.seg == BSS && p->sclass == STATIC)
-                print(".local %s\n.common %s,%d,%d\n", p->x.name, p->x.name,
-                          p->type->size, p->type->align);
-        else if (p->u.seg == BSS && Aflag >= 2)
-                print(".align %d\n%s:.skip %d\n", p->type->align, p->x.name,
-                          p->type->size);
-        else if (p->u.seg == BSS)
-                print(".common %s,%d,%d\n", p->x.name, p->type->size, p->type->align);
-        else
-                print(".align %d\n%s:\n", p->type->align, p->x.name);
-#endif
+			/* else
+					 prevg = p; */
+	}
+	if (p->u.seg == BSS && p->sclass == STATIC)
+			print(".local %s\n.common %s,%d,%d\n", p->x.name, p->x.name,
+					  p->type->size, p->type->align);
+	else if (p->u.seg == BSS && Aflag >= 2)
+			print(".align %d\n%s:.skip %d\n", p->type->align, p->x.name,
+					  p->type->size);
+	else if (p->u.seg == BSS)
+			print(".common %s,%d,%d\n", p->x.name, p->type->size, p->type->align);
+	else
+			print(".align %d\n%s:\n", p->type->align, p->x.name);
 }
 
 
 static void segment(int n) {
-#ifdef __riscos__
-	if (cseg == n) return;
-#endif
 	cseg = n;
 	switch (n) {
-#ifdef __riscos__
-	case CODE: case LIT:
-		print("\tAREA\t|C$$code|, CODE, READONLY\n"); break;
-	case BSS:  print("\tAREA\t|C$$zidata|, DATA, NOINIT\n"); break;
-#else
         case CODE: print(".text\n");   break;
         case BSS:  print(".bss\n");    break;
         case DATA: print(".data\n");   break;
         case LIT:  print(".section\t.rodata\n"); break;
-#endif
 	}
 }
 
 
 static void space(int n) {
 	if (cseg != BSS)
-		print(ASM_SPACE "%d\n", n);
+		print("\t.space\t%d\n", n);
 }
 
 
