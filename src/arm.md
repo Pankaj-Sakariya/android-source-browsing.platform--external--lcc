@@ -322,7 +322,7 @@ reg: MULU4(reg,reg)  "# mul\n"               1
 reg: MULF4(reg,reg)  "\tfmls\t%c, %0, %1\n"  1
 reg: MULF8(reg,reg)  "\tmufd\t%c, %0, %1\n"  1
 
-reg: DIVI4(reg,reg)  "\tbl\t__divsi3\n"    2
+reg: DIVI4(reg,reg)  "\tbl\t__aeabi_idiv\n"  2
 reg: DIVU4(reg,reg)  "\tbl\t|x$udivide|\n"   2
 reg: DIVF4(reg,reg)  "\tfdvs\t%c, %0, %1\n"  1
 reg: DIVF8(reg,reg)  "\tdvfd\t%c, %0, %1\n"  1
@@ -471,8 +471,8 @@ static void target(p) Node p; {
 		break;
 	case DIV+I: case DIV+U:
 		setreg(p, ireg[0]);
-		rtarget(p, 1, ireg[0]);
-		rtarget(p, 0, ireg[1]);
+		rtarget(p, 0, ireg[0]);
+		rtarget(p, 1, ireg[1]);
 		break;
 	case MOD+I: case MOD+U:
 		setreg(p, ireg[1]);
@@ -487,10 +487,13 @@ static void clobber(p) Node p; {
 	assert(p);
 	switch (specific(p->op)) {
 	case CALL+F: case CALL+I: case CALL+U: case CALL+P: case CALL+V:
-		spill(0xf, FREG, p);
+		spill(0xf, IREG, p);
+		break;
+	case DIV+I: case DIV+U:
+		spill(0xc, IREG, p);
 		break;
 	case MOD+I: case MOD+U:
-		/* spill(1, IREG, p); */
+		spill(0xd, IREG, p);
 		break;
 	}
 }

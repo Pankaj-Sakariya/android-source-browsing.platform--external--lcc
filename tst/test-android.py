@@ -14,7 +14,7 @@ testFiles = [
   "incr",
   "init",
   "limits",
-  "sort", # bad output, bus error.
+  "sort",
   "struct",
   "switch",
   "testmod"
