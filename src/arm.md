@@ -327,7 +327,7 @@ reg: DIVU4(reg,reg)  "\tbl\t|x$udivide|\n"   2
 reg: DIVF4(reg,reg)  "\tfdvs\t%c, %0, %1\n"  1
 reg: DIVF8(reg,reg)  "\tdvfd\t%c, %0, %1\n"  1
 
-reg: MODI4(reg,reg)  "\tbl \t__modsi3\n"    1
+reg: MODI4(reg,reg)  "\tbl \t__aeabi_idivmod\n"    1
 reg: MODU4(reg,reg)  "\tbl\t|x$uremainder|\n"   1
 
 stmt: LABELV    "%a:\n"
@@ -469,10 +469,15 @@ static void target(p) Node p; {
 			setreg(p, ireg[n]);
 		}
 		break;
-	case DIV+I: case DIV+U: case MOD+I: case MOD+U:
+	case DIV+I: case DIV+U:
 		setreg(p, ireg[0]);
 		rtarget(p, 1, ireg[0]);
 		rtarget(p, 0, ireg[1]);
+		break;
+	case MOD+I: case MOD+U:
+		setreg(p, ireg[1]);
+		rtarget(p, 0, ireg[0]);
+		rtarget(p, 1, ireg[1]);
 		break;
 	}
 }
@@ -483,6 +488,9 @@ static void clobber(p) Node p; {
 	switch (specific(p->op)) {
 	case CALL+F: case CALL+I: case CALL+U: case CALL+P: case CALL+V:
 		spill(0xf, FREG, p);
+		break;
+	case MOD+I: case MOD+U:
+		/* spill(1, IREG, p); */
 		break;
 	}
 }

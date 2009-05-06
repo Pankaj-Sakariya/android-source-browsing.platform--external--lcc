@@ -14,19 +14,22 @@ testFiles = [
   "incr",
   "init",
   "limits",
-  "nsievebits",
+  "sort", # bad output, bus error.
   "struct",
-  "switch"
+  "switch",
+  "testmod"
+]
+
+slow = [
+  "nsievebits"
 ]
 
 problems = [
-  "a", # short version of cf
-  "cf", # internal compiler error spill
-  "cq", # floats
-  "cvt", #floats
-  "front", # type error, compile error type in argument 4 to qsort
+  "cf", # floating point
+  "cq", # floating point
+  "cvt", # floating point
+  "front", # This is a test of the front end, it's supposed to fail in a variety of ways.
   "paranoia", # inline asm
-  "sort", # loader undefined reference to __modsi3
   "spill", # floating point
   "stdarg", # preprocessor issues
   "wf1", #requires input on stdin
