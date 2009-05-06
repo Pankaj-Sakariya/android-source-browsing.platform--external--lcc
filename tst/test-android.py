@@ -90,11 +90,15 @@ def test(testFile):
   transferToAndroid(testFile)
   os.remove(testFile)
   output = run(testFile)
-  compareResult(testFile, output)
+  return compareResult(testFile, output)
 
 def doTests():
+  failCount = 0
   for testFile in testFiles:
-    test(testFile)
+    if not test(testFile):
+        failCount += 1
+  print "Total tests:    ", len(testFiles)
+  print "Total failures: ", failCount
 
 def checkForDevice():
   if adbGetState() != "device":

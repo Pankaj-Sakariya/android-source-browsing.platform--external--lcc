@@ -323,12 +323,12 @@ reg: MULF4(reg,reg)  "\tfmls\t%c, %0, %1\n"  1
 reg: MULF8(reg,reg)  "\tmufd\t%c, %0, %1\n"  1
 
 reg: DIVI4(reg,reg)  "\tbl\t__aeabi_idiv\n"  2
-reg: DIVU4(reg,reg)  "\tbl\t|x$udivide|\n"   2
+reg: DIVU4(reg,reg)  "\tbl\t__aeabi_uidiv\n" 2
 reg: DIVF4(reg,reg)  "\tfdvs\t%c, %0, %1\n"  1
 reg: DIVF8(reg,reg)  "\tdvfd\t%c, %0, %1\n"  1
 
-reg: MODI4(reg,reg)  "\tbl \t__aeabi_idivmod\n"    1
-reg: MODU4(reg,reg)  "\tbl\t|x$uremainder|\n"   1
+reg: MODI4(reg,reg)  "\tbl \t__aeabi_idivmod\n"   1
+reg: MODU4(reg,reg)  "\tbl\t__aeabi_uidivmod\n"   1
 
 stmt: LABELV    "%a:\n"
 
