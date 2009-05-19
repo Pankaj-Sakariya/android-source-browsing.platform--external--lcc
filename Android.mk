@@ -18,6 +18,9 @@ endif
 
 endif # TARGET_SIMULATOR
 
+# Do not build LCC for now. We are not currently using it.
+BUILD_LCC := false
+
 ifeq ($(BUILD_LCC),true)
 
 TOP_LOCAL_PATH:= $(call my-dir)
